@@ -1,0 +1,21 @@
+node_modules
+dist
+.DS_Store
+*.log
+*.local
+.env
+.env.*
+!.env.example
+.netlify
+
+# editor / tooling local state
+.vscode/
+.idea/
+.claude/settings.local.json
+
+
+# local dev-server config for the Claude Code browser pane
+.claude/launch.json
+
+# agent worktrees
+.claude/worktrees/

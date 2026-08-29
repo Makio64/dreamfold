@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<!--
+  The touch icon, drawn from the same fold the app runs. The share card is
+  a captured frame (`public/og.png`) — do not overwrite it from here.
+
+    chrome --headless --hide-scrollbars --window-size=180,180 \
+      --virtual-time-budget=3000 --screenshot=public/icon-180.png \
+      'file://$PWD/tools/og-card.html?icon'
+
+  Nothing here is loaded by the app; it exists so the icon can be redrawn
+  when the brand or the fold changes.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin:0; background:#000; overflow:hidden; }
+  #c { display:block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const ICON = location.search.includes('icon');
+const W = ICON ? 180 : 1200, H = ICON ? 180 : 630, S = 3;
+const c = document.getElementById('c'), g = c.getContext('2d');
+c.width = W * S; c.height = H * S;
+c.style.width = W + 'px'; c.style.height = H + 'px';
+g.scale(S, S);
+
+// ── the fold, as the app draws it: flat ground to a hinge, then a cylinder
+const R = 250, D0 = 420, SMAX = D0 + R * Math.PI * 1.42;
+const XMAX = 460, BLOCK = 55;
+
+// A slab of city seen from off to one side, so the bend is the shape of the
+// picture: flat street, hinge, and the far end hanging upside down over it.
+const CAM = { x: -1180, y: 430, z: -620 }, TARGET = { x: 40, y: 210, z: 400 };
+const F = ICON ? 255 : 940, CX = ICON ? W * 0.53 : W / 2, CY = ICON ? H * 0.44 : 300, NEAR = 20, FOG = 3000;
+
+const FWD = ( () => {
+	const d = [ TARGET.x - CAM.x, TARGET.y - CAM.y, TARGET.z - CAM.z ];
+	const l = Math.hypot( ...d );
+	return d.map( v => v / l );
+} )();
+const RIGHT = ( () => {
+	const r = [ FWD[2], 0, - FWD[0] ];
+	const l = Math.hypot( ...r );
+	return r.map( v => v / l );
+} )();
+const UP = [
+	RIGHT[1] * FWD[2] - RIGHT[2] * FWD[1],
+	RIGHT[2] * FWD[0] - RIGHT[0] * FWD[2],
+	RIGHT[0] * FWD[1] - RIGHT[1] * FWD[0],
+];
+
+function surface( x, s ) {
+	if ( s <= D0 ) return [ x, 0, s ];
+	const t = ( s - D0 ) / R;
+	return [ x, R * ( 1 - Math.cos( t ) ), D0 + R * Math.sin( t ) ];
+}
+
+function project( p ) {
+	const d = [ p[0] - CAM.x, p[1] - CAM.y, p[2] - CAM.z ];
+	const z = d[0] * FWD[0] + d[1] * FWD[1] + d[2] * FWD[2];
+	if ( z < NEAR ) return null;
+	const x = d[0] * RIGHT[0] + d[1] * RIGHT[1] + d[2] * RIGHT[2];
+	const y = d[0] * UP[0] + d[1] * UP[1] + d[2] * UP[2];
+	return [ CX + F * x / z, CY - F * y / z, z ];
+}
+
+function stroke( pts, width, tint ) {
+	let run = [];
+	const flush = () => {
+		if ( run.length > 1 ) {
+			for ( let i = 1; i < run.length; i ++ ) {
+				const a = run[ i - 1 ], b = run[ i ];
+				const fade = 1 - Math.min( 1, ( ( a[2] + b[2] ) / 2 ) / FOG );
+				g.strokeStyle = `rgba(${tint}, ${( 0.10 + 0.62 * fade * fade ).toFixed( 3 )})`;
+				g.lineWidth = width * ( 0.55 + 0.45 * fade ) * ( ICON ? 1.7 : 1 );
+				g.beginPath(); g.moveTo( a[0], a[1] ); g.lineTo( b[0], b[1] ); g.stroke();
+			}
+		}
+		run = [];
+	};
+	for ( const p of pts ) { const q = project( p ); q ? run.push( q ) : flush(); }
+	flush();
+}
+
+// ── sky: a cold haze where the ground stands vertical
+const sky = g.createLinearGradient( 0, 0, 0, H );
+sky.addColorStop( 0, '#05070a' );
+sky.addColorStop( 0.55, '#0d1218' );
+sky.addColorStop( 1, '#05060a' );
+g.fillStyle = sky; g.fillRect( 0, 0, W, H );
+
+const HR = ICON ? 130 : 620;
+const haze = g.createRadialGradient( CX + HR * .065, CY - HR * .032, 0, CX + HR * .065, CY - HR * .032, HR );
+haze.addColorStop( 0, 'rgba(168, 176, 189, .30)' );
+haze.addColorStop( 0.45, 'rgba(140, 150, 166, .10)' );
+haze.addColorStop( 1, 'rgba(0, 0, 0, 0)' );
+g.fillStyle = haze; g.fillRect( 0, 0, W, H );
+
+// ── the city, as a grid of blocks bending over the frame
+g.lineCap = 'round';
+const TINT = '226, 232, 240';
+
+for ( let x = - XMAX; x <= XMAX; x += BLOCK ) {
+	const pts = [];
+	for ( let s = 0; s <= SMAX; s += 4 ) pts.push( surface( x, s ) );
+	stroke( pts, x === 0 ? 1.5 : 1, TINT );
+}
+
+for ( let s = 0; s <= SMAX; s += BLOCK ) {
+	const pts = [];
+	for ( let x = - XMAX; x <= XMAX; x += 8 ) pts.push( surface( x, s ) );
+	stroke( pts, 1, TINT );
+}
+
+// a few standing blocks, so the grid reads as a city and not as paper
+g.globalCompositeOperation = 'lighter';
+for ( let x = - XMAX + BLOCK; x < XMAX; x += BLOCK ) {
+	for ( let s = BLOCK; s < SMAX; s += BLOCK ) {
+		const h = ( ( Math.sin( x * 0.37 + s * 0.11 ) + Math.sin( s * 0.29 - x * 0.07 ) ) * 0.5 + 1 ) * 30;
+		if ( h < 26 ) continue;
+		const up = s <= D0 ? [ 0, 1, 0 ] : ( () => {
+			const t = ( s - D0 ) / R;
+			return [ 0, Math.cos( t ), - Math.sin( t ) ];
+		} )();
+		const base = surface( x - BLOCK * 0.32, s ), top = surface( x - BLOCK * 0.32, s );
+		const a = project( base );
+		const b = project( [ top[0] + up[0] * h, top[1] + up[1] * h, top[2] + up[2] * h ] );
+		if ( ! a || ! b ) continue;
+		const fade = 1 - Math.min( 1, a[2] / FOG );
+		g.strokeStyle = `rgba(${TINT}, ${( 0.05 + 0.34 * fade * fade ).toFixed( 3 )})`;
+		g.lineWidth = 2.4 * ( 0.5 + 0.5 * fade ) * ( ICON ? 1.4 : 1 );
+		g.beginPath(); g.moveTo( a[0], a[1] ); g.lineTo( b[0], b[1] ); g.stroke();
+	}
+}
+g.globalCompositeOperation = 'source-over';
+
+// ── a bottom scrim, so the type never has to fight the grid
+if ( ! ICON ) {
+const scrim = g.createLinearGradient( 0, H * 0.42, 0, H );
+scrim.addColorStop( 0, 'rgba(0,0,0,0)' );
+scrim.addColorStop( 0.55, 'rgba(0,0,0,.72)' );
+scrim.addColorStop( 1, 'rgba(0,0,0,.94)' );
+g.fillStyle = scrim; g.fillRect( 0, H * 0.42, W, H * 0.58 );
+}
+
+// ── vignette
+const vig = g.createRadialGradient( CX, H * 0.5, H * 0.19, CX, H * 0.5, H * 1.2 );
+vig.addColorStop( 0, 'rgba(0,0,0,0)' );
+vig.addColorStop( 1, 'rgba(0,0,0,.82)' );
+g.fillStyle = vig; g.fillRect( 0, 0, W, H );
+
+// ── type, in the interface's own voice
+const FAM = 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+function caps( text, x, y, size, weight, track, fill ) {
+	g.font = `${weight} ${size}px ${FAM}`;
+	g.fillStyle = fill;
+	g.textBaseline = 'alphabetic';
+	const chars = [ ...text ];
+	let w = 0;
+	for ( const ch of chars ) w += g.measureText( ch ).width + track;
+	w -= track;
+	let cx = x - w / 2;
+	for ( const ch of chars ) { g.fillText( ch, cx, y ); cx += g.measureText( ch ).width + track; }
+	return w;
+}
+
+if ( ! ICON ) {
+g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = 26;
+caps( 'DREAMFOLD', CX, 470, 60, 500, 60 * 0.24, '#f2f2f2' );
+g.shadowBlur = 14;
+caps( 'THE INCEPTION EFFECT ON REAL CITIES', CX, 514, 15, 400, 15 * 0.28, 'rgba(242,242,242,.62)' );
+
+g.globalAlpha = .9;
+g.strokeStyle = 'rgba(242,242,242,.22)'; g.lineWidth = 1;
+g.beginPath(); g.moveTo( CX - 150, 548 ); g.lineTo( CX + 150, 548 ); g.stroke();
+g.globalAlpha = 1;
+
+caps( 'WEBGPU  ·  TSL  ·  PHOTOREALISTIC 3D TILES  ·  MAKIO64', CX, 582, 12, 400, 12 * 0.3, 'rgba(242,242,242,.4)' );
+g.shadowBlur = 0;
+}
+</script>
+</body>
+</html>

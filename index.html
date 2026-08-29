@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<title>Dreamfold — bend a real city over your head</title>
+	<meta name="description"
+		content="Stand in a real street on Google's photorealistic 3D tiles and bend the city over your head, with vertex displacement written in TSL and rendered on WebGPU.">
+	<link rel="canonical" href="https://dreamfold.netlify.app/">
+	<meta name="author" content="David Ronai (Makio64)">
+	<meta name="theme-color" content="#000000">
+	<meta name="color-scheme" content="dark">
+
+	<!-- The card a link to this becomes. Absolute URLs, because a scraper reads
+	     the tags from its own machine and never resolves a relative one. -->
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="Dreamfold">
+	<meta property="og:title" content="Dreamfold — bend a real city over your head">
+	<meta property="og:description"
+		content="Stand in a real street on Google's photorealistic 3D tiles and bend the city over your head, with vertex displacement written in TSL and rendered on WebGPU.">
+	<meta property="og:url" content="https://dreamfold.netlify.app/">
+	<meta property="og:image" content="https://dreamfold.netlify.app/og.png">
+	<meta property="og:image:type" content="image/png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta property="og:image:alt"
+		content="Downtown San Francisco folding over itself, the far city hanging above the street.">
+	<meta property="og:locale" content="en_US">
+
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:site" content="@makio64">
+	<meta name="twitter:creator" content="@makio64">
+	<meta name="twitter:title" content="Dreamfold — bend a real city over your head">
+	<meta name="twitter:description"
+		content="Stand in a real street on Google's photorealistic 3D tiles and bend the city over your head, with vertex displacement written in TSL and rendered on WebGPU.">
+	<meta name="twitter:image" content="https://dreamfold.netlify.app/og.png">
+	<meta name="twitter:image:alt"
+		content="Downtown San Francisco folding over itself, the far city hanging above the street.">
+
+	<meta name="apple-mobile-web-app-title" content="Dreamfold">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="mobile-web-app-capable" content="yes">
+	<link rel="apple-touch-icon" href="/icon-180.png">
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🌀</text></svg>">
+
+	<link rel="preconnect" href="https://tile.googleapis.com" crossorigin>
+	<link rel="preconnect" href="https://api.cesium.com">
+</head>
+
+<body class="state-boot">
+
+	<canvas id="view"></canvas>
+
+	<div id="ui">
+
+		<header class="brand">
+			<h1>Dreamfold</h1>
+			<p>
+				The inception effect on real cities
+				<span class="sep">·</span>
+				by <a href="https://x.com/makio64" target="_blank" rel="noopener">Makio64</a>
+				<span class="sep">·</span>
+				<span class="credit"><a href="https://github.com/NASA-AMMOS/3DTilesRendererJS" target="_blank"
+						rel="noopener">3d-tiles-renderer</a> by <a class="nb" href="https://x.com/garrettkjohnson"
+						target="_blank" rel="noopener">Garrett Johnson</a></span>
+				<span class="sep">·</span>
+				<span class="credit">3D tiles via <a href="https://cesium.com/platform/cesium-ion/" target="_blank"
+						rel="noopener">Cesium Ion</a></span>
+			</p>
+		</header>
+
+		<p class="boot" id="boot" role="status" aria-live="polite"></p>
+
+		<!-- Setup: two screens, one question each. Get a key, then paste it. The
+		     three rows are the point — a step's length can never push the button
+		     below the fold, and a failure that arrives while somebody is reading
+		     screen 01 is still visible, because the notice does not live inside a
+		     step. See UI._showKeyStep. -->
+		<div class="keyprompt" id="keyprompt" hidden>
+			<section class="keyprompt-card" id="keyprompt-card" role="dialog" aria-modal="true"
+				aria-labelledby="keyget-title">
+
+				<header class="keyhead">
+					<span class="keyhead-chapter" id="keyprompt-chapter">Your free key</span>
+					<span class="keyhead-count" id="keyprompt-count" aria-hidden="true">01 / 02</span>
+					<span class="vh" id="keyprompt-count-vh">Step 1 of 2</span>
+					<div class="keybar" aria-hidden="true"></div>
+				</header>
+
+				<div class="keybody" id="keyprompt-body">
+
+					<section class="keystep" id="keystep-get">
+						<h2 id="keyget-title" tabindex="-1">First, get a free key.</h2>
+						<p class="keystep-sub">The city streams from Cesium, and a key is how it knows the requests are
+							yours. It is free and takes about a minute.</p>
+						<p class="keystep-hint">On Cesium the key is called an access token — copy the one named Default.
+							If it offers to add “Google Photorealistic 3D Tiles”, say yes.</p>
+					</section>
+
+					<section class="keystep" id="keystep-paste" hidden>
+						<h2 id="keypaste-title" tabindex="-1">Paste your key.</h2>
+						<p class="keystep-sub" id="keypaste-sub">It is kept in this browser and sent only to the map
+							service.</p>
+						<form class="keyform" id="keyform" novalidate>
+							<label for="keyinput">Your key</label>
+							<div class="keyfield">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+									aria-hidden="true">
+									<circle cx="8" cy="12" r="3.2" />
+									<path d="M11.2 12H21m-3.6 0v3.2m-3.4-3.2v2.2" />
+								</svg>
+								<input id="keyinput" type="text" autocomplete="off" autocapitalize="none" autocorrect="off"
+									spellcheck="false" required enterkeyhint="go"
+									aria-describedby="keypaste-sub keyprompt-msg" placeholder="eyJhbGciOiJIUzI1NiIs…">
+							</div>
+						</form>
+						<!-- a Google Maps key with the Map Tiles API works in this field too, but
+						     it is not offered here: it is a second way to do the one thing this
+						     screen is for, and the free Cesium key is the path -->
+					</section>
+
+				</div>
+
+				<footer class="keyfoot">
+					<p class="keynote" id="keyprompt-msg" role="status" aria-live="polite"></p>
+					<a class="keynote-link" id="keyprompt-msg-link" target="_blank" rel="noopener" hidden></a>
+
+					<div class="keyact" id="keyact-get">
+						<button class="keyalt" type="button" data-key-step="paste">I already have a key</button>
+						<a class="keygo" id="keyget" href="https://ion.cesium.com/signup" target="_blank"
+							rel="noopener">Get a free key <span aria-hidden="true">↗</span></a>
+					</div>
+
+					<div class="keyact" id="keyact-paste" hidden>
+						<button class="keyalt" type="button" data-key-step="get">Where do I get a key?</button>
+						<button class="keygo" id="keysave" type="submit" form="keyform" data-label="Verify key"
+							data-busy="Checking…"><span>Verify key</span><i aria-hidden="true"></i></button>
+					</div>
+				</footer>
+
+			</section>
+		</div>
+
+		<!-- Destination -->
+		<div class="scrim" id="picker" hidden>
+			<section class="card wide" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+				<h2 id="picker-title" tabindex="-1">Where does it fold?</h2>
+				<p class="sub">Pick a block of city. Everything here has continuous mesh for a kilometre in every
+					direction, which is the material the fold lifts.</p>
+
+				<form class="searchform" id="searchform" novalidate>
+					<label class="vh" for="search">Search a city, or paste a map link</label>
+					<input id="search" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go"
+						placeholder="Search, or paste a Google Maps link">
+				</form>
+				<p class="note" id="pickhint" role="status" aria-live="polite"></p>
+
+				<ul class="places" id="places"></ul>
+			</section>
+		</div>
+
+		<!-- In-world controls.
+
+		     The whole surface is one line of type along the bottom and two icons in
+		     the corner. There is no slab: the controls are set on the picture the way
+		     the sibling project sets them, because the picture is the point and a
+		     panel across the bottom third is exactly where the flat street the city
+		     bends away from is. Everything that is a *setting* rather than a choice —
+		     the bend, the crane, the whole of the art direction — is behind the gear. -->
+		<div class="hud" id="hud" hidden>
+
+			<div class="loading" id="loading"><i></i><span id="loading-text">Streaming the city</span></div>
+
+			<!-- The frame cost, in the corner the bar leaves alone. It stays up
+			     while a move plays — that is the moment the number is about. -->
+			<p class="fps" id="fps" aria-hidden="true">— fps</p>
+
+			<div class="corner">
+				<button class="icon" id="chrome" type="button" aria-pressed="false"
+					aria-label="Hide the controls" title="Hide the controls&nbsp;&nbsp;H">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+						<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+						<circle cx="12" cy="12" r="3" />
+					</svg>
+				</button>
+				<button class="icon" id="btn-settings" type="button" aria-expanded="false" aria-controls="settings"
+					aria-label="Settings" title="Settings">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+						<circle cx="12" cy="12" r="3.2" />
+						<path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z" />
+					</svg>
+				</button>
+			</div>
+
+			<!-- Location · Bending · Animation · Height · Start · Record.
+			     The choice lists are built from FOLD_SHAPES and SHOTS in UI.js. -->
+			<nav class="bar" id="bar">
+				<button class="picker-backdrop" type="button" tabindex="-1" aria-hidden="true"></button>
+
+				<button class="opt" id="opt-place" type="button" aria-haspopup="dialog" aria-controls="picker">
+					<span class="opt-label">Location</span>
+					<span class="opt-line">
+						<span class="opt-value" id="place-name">—</span>
+						<svg class="opt-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+					</span>
+				</button>
+
+				<div class="opt-wrap">
+					<button class="opt" id="opt-shape" type="button" aria-expanded="false" aria-controls="shapes" aria-haspopup="dialog">
+						<span class="opt-label">Bending</span>
+						<span class="opt-line">
+							<span class="opt-value"></span>
+							<svg class="opt-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+						</span>
+					</button>
+					<div class="opt-menu" id="shapes" role="dialog" aria-labelledby="shapes-title">
+						<div class="picker-head">
+							<span id="shapes-title">Bending style</span>
+							<button class="picker-close" id="shapes-close" type="button" aria-label="Close">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+							</button>
+						</div>
+						<div class="opt-list" id="shapes-list"></div>
+					</div>
+				</div>
+
+				<div class="opt-wrap">
+					<button class="opt" id="opt-move" type="button" aria-expanded="false" aria-controls="moves" aria-haspopup="dialog">
+						<span class="opt-label">Animation</span>
+						<span class="opt-line">
+							<span class="opt-value"></span>
+							<svg class="opt-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+						</span>
+					</button>
+					<div class="opt-menu" id="moves" role="dialog" aria-labelledby="moves-title">
+						<div class="picker-head">
+							<span id="moves-title">Animation style</span>
+							<button class="picker-close" id="moves-close" type="button" aria-label="Close">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+							</button>
+						</div>
+						<div class="opt-list" id="moves-list"></div>
+					</div>
+				</div>
+
+				<div class="opt-wrap">
+					<button class="opt" id="opt-height" type="button" aria-expanded="false" aria-controls="heights" aria-haspopup="dialog">
+						<span class="opt-label">Height</span>
+						<span class="opt-line">
+							<span class="opt-value">—</span>
+							<svg class="opt-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 15 6-6 6 6" /></svg>
+						</span>
+					</button>
+					<div class="opt-menu height-menu" id="heights" role="dialog" aria-labelledby="heights-title">
+						<div class="picker-head">
+							<span id="heights-title">Animation height</span>
+							<button class="picker-close" id="heights-close" type="button" aria-label="Close">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+							</button>
+						</div>
+						<div class="height-fields">
+							<label class="slider">
+								<span>Start</span>
+								<input id="shot-height-start" type="range" min="0" max="1000" value="0" step="1" aria-label="Animation start height">
+								<output id="shot-height-start-out">—</output>
+							</label>
+							<label class="slider">
+								<span>Finish</span>
+								<input id="shot-height-finish" type="range" min="0" max="1000" value="0" step="1" aria-label="Animation finish height">
+								<output id="shot-height-finish-out">—</output>
+							</label>
+						</div>
+					</div>
+				</div>
+
+				<i class="bar-sep" aria-hidden="true"></i>
+
+				<button class="go" id="training" type="button" data-label="Dream" data-running="Stop"
+					aria-pressed="false" disabled>
+					<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+					<span class="go-label">Dream</span>
+				</button>
+
+				<button class="rec-btn" id="record" type="button" aria-pressed="false"
+					title="Record this move to a video file"><i></i><span>REC</span></button>
+
+			</nav>
+
+			<!-- Everything that is a setting. Rows under Look are generated from
+			     LOOK_CONTROLS in UI.js. -->
+			<aside class="settings" id="settings" aria-label="Settings">
+
+				<div class="settings-head">
+					<h3>Settings</h3>
+					<button class="icon" id="settings-close" type="button" aria-label="Close">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+					</button>
+				</div>
+
+				<div class="adv-group">
+					<h4>Fold</h4>
+					<label class="slider">
+						<span>Bend</span>
+						<input id="bend" type="range" min="0" max="1000" value="0" step="1" aria-label="Bend amount">
+						<output id="bend-out">0°</output>
+					</label>
+					<label class="slider">
+						<span>Height</span>
+						<input id="height" type="range" min="0" max="1000" value="600" step="1" aria-label="Camera height">
+						<output id="height-out">—</output>
+					</label>
+					<div class="adv-row">
+						<label for="stance">Stance</label>
+						<select id="stance">
+							<option value="street">In the street</option>
+							<option value="rooftop" selected>Over the roofs</option>
+							<option value="high">Higher</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="adv-group">
+					<h4>Look</h4>
+					<div class="rows" id="look-rows"></div>
+				</div>
+
+				<div class="adv-group">
+					<h4>Render</h4>
+					<!-- In chain order, and every one of them is a cost rather than a
+					     strength: each rebuilds the pipeline without its pass. The
+					     matching sliders under Look dial the same effects down to
+					     nothing without making them any cheaper. -->
+					<label class="toggle"><input type="checkbox" id="clouds-pass"><span>Clouds</span></label>
+					<label class="toggle"><input type="checkbox" id="tiltshift" checked><span>Tilt-shift</span></label>
+					<label class="toggle"><input type="checkbox" id="glow" checked><span>Glow</span></label>
+					<label class="swatch"><input type="color" id="sky" value="#e6e2d6"><span>Sky &amp; haze</span></label>
+					<button class="adv-reset" id="reset" type="button">Reset the view</button>
+				</div>
+
+				<div class="adv-group">
+					<h4>Recording</h4>
+					<div class="adv-row">
+						<label for="rec-res">Resolution</label>
+						<select id="rec-res">
+							<option value="720">720p</option>
+							<option value="1080" selected>1080p</option>
+							<option value="1440">1440p</option>
+							<option value="2160">4K</option>
+						</select>
+					</div>
+					<div class="adv-row">
+						<label for="rec-fps">Frame rate</label>
+						<select id="rec-fps">
+							<option value="24">24 fps</option>
+							<option value="30">30 fps</option>
+							<option value="60" selected>60 fps</option>
+						</select>
+					</div>
+					<div class="adv-row">
+						<label for="rec-quality">Tile quality</label>
+						<select id="rec-quality">
+							<option value="fast">Fast</option>
+							<option value="balanced" selected>Balanced</option>
+							<option value="best">Best</option>
+						</select>
+					</div>
+					<p class="hint" id="rec-size"></p>
+					<p class="hint">Frames render one at a time on a fixed clock, so the export is smooth even when the move is not. It takes longer than the clip.</p>
+				</div>
+
+			</aside>
+
+			<p class="tip" id="tip">Drag to look · arrows to walk · H hides the controls</p>
+
+		</div>
+
+	</div>
+
+	<script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

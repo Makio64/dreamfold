@@ -1,0 +1,1489 @@
+:root {
+	/* Black rather than blue-black, and opaque enough to be a surface rather
+	   than a tint. The frame behind it is a photograph of a city bending; an
+	   interface with a colour of its own competes with it. */
+	--glass: rgba(0, 0, 0, .78);
+	--glass-solid: #050505;
+	/* One hairline, and it is grey rather than a white at low alpha — over a
+	   bright sky a translucent white border lifts to near-white, which is the
+	   opposite of sober. A flat dark grey holds its weight over anything. */
+	--hair: #232323;
+	--hair-hi: #3a3a3a;
+	--ink: #f2f2f2;
+	--ink-2: rgba(242, 242, 242, .62);
+	--ink-3: rgba(242, 242, 242, .4);
+	--accent: #e8e8e8;
+	--rec: #ff453a;
+	--r: 4px;
+	--r-s: 3px;
+	--shade: 0 1px 16px rgba(0, 0, 0, .62);
+	--ease: cubic-bezier(.22, 1, .36, 1);
+	--t: 240ms;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+	margin: 0;
+	height: 100%;
+	background: #000;
+	color: var(--ink);
+	overflow: hidden;
+	font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+		'Helvetica Neue', Arial, sans-serif;
+	font-synthesis-weight: none;
+	-webkit-font-smoothing: antialiased;
+}
+
+#view {
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	display: block;
+	touch-action: none;
+	cursor: grab;
+}
+
+#view:active { cursor: grabbing; }
+
+#ui {
+	position: fixed;
+	inset: 0;
+	z-index: 2;
+	pointer-events: none;
+}
+
+#ui button,
+#ui input,
+#ui a,
+#ui li { pointer-events: auto; }
+
+.vh {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────── title */
+
+.brand {
+	position: fixed;
+	top: 24px;
+	left: 0;
+	right: 0;
+	text-align: center;
+	user-select: none;
+	text-shadow: var(--shade);
+	transition: opacity var(--t) var(--ease);
+}
+
+.brand h1 {
+	margin: 0;
+	font-size: clamp(14px, 1.5vw, 18px);
+	font-weight: 500;
+	letter-spacing: .28em;
+	text-transform: uppercase;
+}
+
+.brand p {
+	margin: 7px 0 0;
+	font-size: 9px;
+	letter-spacing: .15em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.brand .nb { white-space: nowrap; }
+.brand .sep { padding: 0 .5em; opacity: .5; }
+
+body.state-folding .brand { opacity: 0; }
+
+/* Above the bar, not across it. The bar sits at 30px and stands about 41px
+   tall, so anything under ~80 lands on top of the Location readout. */
+.boot {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 88px;
+	margin: 0;
+	text-align: center;
+	font-size: 10px;
+	letter-spacing: .18em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	text-shadow: var(--shade);
+	transition: opacity var(--t) var(--ease);
+}
+
+.boot:empty { opacity: 0; }
+
+/* ─────────────────────────────────────────────── cards */
+
+/* Above the bar (7) and the settings drawer (8), below setup (30). A modal that
+   the interface paints over is not a modal: the bar's buttons stayed both
+   visible and clickable through the card. */
+.scrim {
+	position: fixed;
+	inset: 0;
+	z-index: 20;
+	display: grid;
+	place-items: center;
+	padding: 24px;
+	background: radial-gradient(120% 90% at 50% 40%, rgba(8, 10, 14, .58), rgba(8, 10, 14, .88));
+	backdrop-filter: blur(3px);
+	pointer-events: auto;
+	animation: fade var(--t) var(--ease);
+}
+
+.scrim[hidden] { display: none; }
+
+@keyframes fade { from { opacity: 0; } }
+
+.card {
+	width: min(100%, 440px);
+	max-height: min(100%, 660px);
+	display: flex;
+	flex-direction: column;
+	padding: 30px 30px 24px;
+	border: 1px solid var(--hair);
+	border-radius: var(--r);
+	background: var(--glass-solid);
+	box-shadow: 0 26px 70px rgba(0, 0, 0, .6);
+	animation: rise var(--t) var(--ease);
+}
+
+.card.wide { width: min(100%, 520px); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+.card h2 {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 500;
+	letter-spacing: -.01em;
+}
+
+.card h2:focus-visible { outline: none; }
+
+.card .sub {
+	margin: 10px 0 0;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--ink-2);
+}
+
+.card footer {
+	margin-top: 18px;
+	padding-top: 16px;
+	border-top: 1px solid var(--hair);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	flex-wrap: wrap;
+}
+
+.card .hint {
+	font-size: 11px;
+	color: var(--ink-3);
+}
+
+.note {
+	margin: 12px 0 0;
+	min-height: 16px;
+	font-size: 12px;
+	line-height: 1.45;
+	color: var(--accent);
+}
+
+.note:empty { margin: 0; min-height: 0; }
+
+/* ─────────────────────────────────────────────── fields */
+
+.searchform {
+	display: flex;
+	gap: 8px;
+	margin-top: 20px;
+}
+
+input[type=search] {
+	flex: 1;
+	min-width: 0;
+	padding: 11px 13px;
+	font: inherit;
+	font-size: 13px;
+	color: var(--ink);
+	background: rgba(255, 255, 255, .05);
+	border: 1px solid var(--hair);
+	border-radius: var(--r-s);
+	outline: none;
+	transition: border-color var(--t) var(--ease), background var(--t) var(--ease);
+}
+
+input[type=search]:focus {
+	border-color: var(--hair-hi);
+	background: rgba(255, 255, 255, .08);
+}
+
+input::placeholder { color: var(--ink-3); }
+
+/* ─────────────────────────────────────────────── buttons */
+
+button {
+	font: inherit;
+	color: inherit;
+	background: none;
+	border: none;
+	cursor: pointer;
+}
+/* ─────────────────────────────────────────────── place list */
+
+.places {
+	list-style: none;
+	margin: 16px -8px -8px;
+	padding: 4px 8px 8px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: var(--hair-hi) transparent;
+}
+
+.places li {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: var(--r-s);
+	cursor: pointer;
+	transition: background var(--t) var(--ease);
+}
+
+.places li:hover,
+.places li.on { background: rgba(255, 255, 255, .07); }
+
+.places em {
+	font-style: normal;
+	font-size: 17px;
+	width: 22px;
+	text-align: center;
+	filter: saturate(.9);
+}
+
+.places b {
+	font-weight: 500;
+	font-size: 14px;
+}
+
+.places small {
+	display: block;
+	margin-top: 2px;
+	font-size: 11px;
+	color: var(--ink-3);
+}
+
+.places .col { flex: 1; min-width: 0; }
+
+/* ─────────────────────────────────────────────── hud */
+
+.hud[hidden] { display: none; }
+
+.loading {
+	position: fixed;
+	top: 24px;
+	left: 22px;
+	transition: opacity var(--t) var(--ease), visibility var(--t);
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 9px 14px;
+	font-size: 10px;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+	color: var(--ink-2);
+	background: var(--glass);
+	backdrop-filter: blur(10px);
+	border: 1px solid var(--hair);
+	border-radius: var(--r-s);
+}
+
+.loading i {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--accent);
+	animation: pulse 1.1s var(--ease) infinite;
+}
+
+@keyframes pulse { 50% { opacity: .25; transform: scale(.7); } }
+
+body.tiles-quiet .loading { opacity: 0; }
+
+/* ─────────────────────────────────────────────── the bar */
+
+/* A soft wash gives the white controls a stable floor without becoming a panel.
+   It belongs to the HUD rather than the bar so it can span the viewport on the
+   narrow layout, where the controls stack down the left edge. */
+.hud::before {
+	content: '';
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: clamp(130px, 18dvh, 190px);
+	background: linear-gradient(to top, #000 0%, rgba(0, 0, 0, .58) 42%, rgba(0, 0, 0, 0) 100%);
+	pointer-events: none;
+	transition: opacity 380ms var(--ease), visibility 420ms;
+}
+
+/* No slab. The controls are type on the sky, set on one line — the same
+   arrangement as the sibling project, and for the same reason: the picture is
+   the whole point, and a panel across the bottom third sits exactly where the
+   flat street the city bends away from is. Six things live here — where, what
+   bend, which move, its height, start, record — and everything else that is a
+   *setting* is behind the gear in the corner. */
+.bar {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 30px;
+	padding: 0 24px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	gap: 28px;
+	text-shadow: var(--shade);
+	transition: opacity 380ms var(--ease), transform 420ms var(--ease), visibility 420ms;
+	z-index: 7;
+}
+
+.opt-wrap { position: relative; display: flex; }
+
+.bar-sep {
+	width: 1px;
+	height: 26px;
+	margin: 0 2px;
+	background: var(--hair);
+}
+
+.opt {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	padding: 0 0 8px;
+	border: 0;
+	background: none;
+	color: var(--ink);
+	font: inherit;
+	cursor: pointer;
+	text-align: left;
+}
+
+/* Fixed columns. A value that changes width — Fold to Tube, Paris to Hong Kong
+   — must not shove its neighbours along the line. */
+#opt-place { min-width: 168px; }
+#opt-shape { min-width: 92px; }
+#opt-move { min-width: 104px; }
+#opt-height { min-width: 112px; }
+
+.opt-label {
+	font-size: 9px;
+	letter-spacing: .17em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 500;
+	transition: color 220ms var(--ease);
+}
+
+.opt:hover .opt-label,
+.opt[aria-expanded="true"] .opt-label { color: var(--ink-2); }
+
+.opt-line { display: flex; align-items: center; gap: 7px; min-width: 0; }
+
+.opt-value {
+	font-size: 13.5px;
+	font-weight: 500;
+	letter-spacing: -.005em;
+	white-space: nowrap;
+	max-width: 168px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.opt-caret {
+	flex: none;
+	width: 9px;
+	height: 9px;
+	color: var(--ink-3);
+	transition: transform 260ms var(--ease), color 220ms var(--ease);
+}
+
+.opt[aria-expanded="true"] .opt-value,
+.opt[aria-expanded="true"] .opt-caret { color: var(--accent); }
+.opt[aria-expanded="true"] .opt-caret { transform: rotate(180deg); }
+
+/* The underline the sibling project puts under every control. It is drawn left
+   to right on the way in and, on the way out, is still travelling that way —
+   the tail leaves last, so it reads as a stroke being finished rather than one
+   being undone. Written directly onto these selectors rather than borrowed from
+   a `.rule` modifier, because `.rule` in this file is already a bordered
+   button and the two cannot both be true. */
+.opt::after,
+.go::after,
+.rec-btn::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 1px;
+	background: currentColor;
+	transform: scaleX(0);
+	transform-origin: 100% 50%;
+	transition: transform 460ms var(--ease);
+}
+
+.opt:hover::after, .opt:focus-visible::after,
+.go:hover::after, .go:focus-visible::after,
+.rec-btn:hover::after, .rec-btn:focus-visible::after {
+	transform: scaleX(1);
+	transform-origin: 0 50%;
+}
+
+.opt:focus-visible, .go:focus-visible, .rec-btn:focus-visible { outline: none; }
+
+/* The options carry full-strength ink, which would make too loud a rule. */
+.opt::after { background: rgba(255, 255, 255, .5); }
+
+/* An open list is a held state, so its rule stays drawn. */
+.opt[aria-expanded="true"]::after { transform: scaleX(1); transform-origin: 0 50%; background: var(--accent); }
+
+/* Contrast, the play glyph and the extra tracking are enough to make this the
+   primary move without introducing a second palette over the image. */
+.go {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 0 8px;
+	border: 0;
+	background: none;
+	color: var(--accent);
+	font: inherit;
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: .2em;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: color 220ms var(--ease), opacity var(--t) var(--ease);
+}
+
+.go svg { width: 9px; height: 9px; fill: currentColor; }
+.go:hover { color: var(--ink); }
+.go[disabled] { opacity: .4; cursor: default; }
+.go[disabled]::after { display: none; }
+
+/* Start and Stop are different lengths; reserving the wider one keeps the row
+   from shifting sideways when a move begins. */
+.go-label { min-width: 46px; }
+
+.rec-btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	padding: 0 0 8px;
+	border: 0;
+	background: none;
+	color: var(--ink-3);
+	font: inherit;
+	font-size: 10px;
+	letter-spacing: .2em;
+	font-weight: 500;
+	cursor: pointer;
+	transition: color 220ms var(--ease), opacity var(--t) var(--ease);
+}
+
+.rec-btn i {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.rec-btn:hover { color: var(--ink-2); }
+.rec-btn[aria-pressed="true"] { color: var(--rec); }
+.rec-btn[aria-pressed="true"] i { animation: blink 1.4s steps(1) infinite; }
+.rec-btn[disabled] { opacity: .4; cursor: default; }
+.rec-btn[disabled]::after { display: none; }
+
+@keyframes blink { 50% { opacity: .25; } }
+
+body.is-recording .go { color: var(--rec); }
+
+/* ─────────────────────────────────────────────── bar popovers */
+
+/* One class for all three popovers. The destination keeps the full-screen card it
+   already had — it carries a search field and pasted map links, which is a
+   different weight of decision to picking one of three bends. */
+.opt-menu {
+	position: absolute;
+	left: 0;
+	bottom: calc(100% + 10px);
+	width: 320px;
+	max-height: min(62vh, 520px);
+	display: flex;
+	flex-direction: column;
+	background: var(--glass-solid);
+	backdrop-filter: blur(24px);
+	-webkit-backdrop-filter: blur(24px);
+	border: 1px solid var(--hair);
+	border-radius: var(--r);
+	opacity: 0;
+	/* visibility, not just pointer-events: a child button carries
+	   `#ui button { pointer-events: auto }`, which wins over the inherited
+	   none and would keep the closed popover clickable while invisible */
+	visibility: hidden;
+	transform: translateY(8px);
+	transform-origin: 0 100%;
+	pointer-events: none;
+	transition: opacity 220ms var(--ease), transform 280ms var(--ease), visibility 280ms;
+	overflow: hidden;
+}
+
+body.shapes-open #shapes,
+body.moves-open #moves,
+body.heights-open #heights { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+
+.picker-head {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 15px 16px 12px;
+	border-bottom: 1px solid var(--hair);
+	font-size: 9px;
+	font-weight: 500;
+	letter-spacing: .2em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.picker-close { display: none; }
+.picker-backdrop { display: none; }
+
+.height-menu { width: 280px; }
+
+.height-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 16px;
+}
+
+.opt-list {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 0 14px 12px;
+	scrollbar-width: thin;
+	scrollbar-color: var(--hair-hi) transparent;
+}
+
+.opt-list::-webkit-scrollbar { width: 6px; }
+.opt-list::-webkit-scrollbar-thumb { background: var(--hair-hi); border-radius: 3px; }
+
+.opt-option {
+	position: relative;
+	display: grid;
+	grid-template-columns: 28px minmax(0, 1fr);
+	align-items: start;
+	gap: 10px;
+	width: calc(100% + 28px);
+	margin: 0 -14px;
+	padding: 12px 16px;
+	border: 0;
+	border-bottom: 1px solid var(--hair);
+	border-radius: 0;
+	background: none;
+	color: var(--ink-2);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: color .22s var(--ease), background-color .22s var(--ease), border-color .22s var(--ease);
+}
+
+.opt-option:last-child { border-bottom: 0; }
+
+.opt-index {
+	padding-top: 2px;
+	font-size: 10px;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: .08em;
+	color: var(--ink-3);
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	transition: color .22s var(--ease);
+}
+
+.opt-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.opt-option b {
+	font-weight: 400;
+	font-size: 13px;
+	letter-spacing: 0;
+	color: var(--ink-2);
+	transition: color .22s var(--ease);
+}
+
+.opt-option i {
+	font-style: normal;
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--ink-3);
+	transition: color .22s var(--ease);
+}
+
+.opt-option:hover,
+.opt-option:focus-visible {
+	outline: none;
+	background: #fff;
+	border-color: transparent;
+	color: #060606;
+}
+
+.opt-option:hover b, .opt-option:focus-visible b,
+.opt-option:hover i, .opt-option:focus-visible i,
+.opt-option:hover .opt-index, .opt-option:focus-visible .opt-index { color: #060606; }
+
+.opt-option[aria-pressed="true"] b,
+.opt-option[aria-pressed="true"] .opt-index { color: var(--ink); }
+.opt-option[aria-pressed="true"] i { color: var(--ink-2); }
+
+.opt-option[aria-pressed="true"]:hover b,
+.opt-option[aria-pressed="true"]:hover .opt-index,
+.opt-option[aria-pressed="true"]:hover i { color: #060606; }
+
+/* ─────────────────────────────────────────────── corner tools */
+
+.corner {
+	position: fixed;
+	top: 20px;
+	right: 22px;
+	display: flex;
+	gap: 6px;
+	transition: opacity var(--t) var(--ease), visibility var(--t);
+}
+
+.icon {
+	width: 30px;
+	height: 30px;
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--ink-3);
+	cursor: pointer;
+	text-decoration: none;
+	transition: color 220ms var(--ease);
+}
+
+.icon svg { width: 16px; height: 16px; }
+.icon:hover { color: var(--ink); transition-duration: 110ms; }
+.icon[aria-expanded="true"] { color: var(--accent); }
+
+/* ─────────────────────────────────────────────── settings */
+
+.settings {
+	position: fixed;
+	top: 62px;
+	right: 22px;
+	width: 320px;
+	max-height: calc(100vh - 110px);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 14px 16px 18px;
+	border-radius: var(--r);
+	background: var(--glass-solid);
+	backdrop-filter: blur(26px) saturate(1.5);
+	-webkit-backdrop-filter: blur(26px) saturate(1.5);
+	border: 1px solid var(--hair);
+	box-shadow: 0 24px 60px -24px #000;
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(-8px) scale(.985);
+	transform-origin: 100% 0;
+	pointer-events: none;
+	transition: opacity 200ms var(--ease), transform 240ms var(--ease), visibility 240ms;
+	scrollbar-width: thin;
+	scrollbar-color: var(--hair-hi) transparent;
+	z-index: 8;
+}
+
+body.settings-open .settings { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+
+.settings::-webkit-scrollbar { width: 6px; }
+.settings::-webkit-scrollbar-thumb { background: var(--hair-hi); border-radius: 3px; }
+
+.settings-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+
+.settings-head h3 {
+	margin: 0;
+	font-size: 10px;
+	letter-spacing: .2em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 500;
+}
+
+.settings-head .icon { width: 26px; height: 26px; }
+.settings-head .icon svg { width: 14px; height: 14px; }
+
+.adv-group + .adv-group { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--hair); }
+
+.adv-group .slider + .slider,
+.adv-group .slider + .adv-row { margin-top: 11px; }
+
+.adv-group h4 {
+	margin: 0 0 10px;
+	font-size: 9.5px;
+	letter-spacing: .17em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	font-weight: 500;
+}
+
+.adv-row {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: center;
+	gap: 18px;
+	min-height: 34px;
+	font-size: 11.5px;
+	color: var(--ink-2);
+}
+
+.adv-row select {
+	font: inherit;
+	font-size: 11.5px;
+	padding: 5px 8px;
+	color: var(--ink);
+	background: rgba(255, 255, 255, .05);
+	border: 1px solid var(--hair);
+	border-radius: var(--r-s);
+	cursor: pointer;
+}
+
+.adv-reset {
+	margin-top: 12px;
+	width: 100%;
+	padding: 8px;
+	font-size: 10px;
+	letter-spacing: .14em;
+	text-transform: uppercase;
+	color: var(--ink-2);
+	background: none;
+	border: 1px solid var(--hair);
+	border-radius: var(--r-s);
+	cursor: pointer;
+	transition: color var(--t) var(--ease), border-color var(--t) var(--ease), background var(--t) var(--ease);
+}
+
+.adv-reset:hover { color: var(--ink); border-color: var(--hair-hi); background: rgba(255, 255, 255, .05); }
+
+.adv-group .hint {
+	margin: 10px 0 0;
+	font-size: 10.5px;
+	line-height: 1.55;
+	color: var(--ink-3);
+}
+
+.adv-row select:disabled {
+	opacity: .4;
+	cursor: default;
+}
+
+/* ─────────────────────────────────────────────── sliders and switches */
+
+.slider {
+	display: grid;
+	grid-template-columns: 66px 1fr 46px;
+	align-items: center;
+	gap: 8px;
+}
+
+.slider span {
+	font-size: 10px;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.slider output {
+	font-size: 11px;
+	text-align: right;
+	color: var(--ink-2);
+	font-variant-numeric: tabular-nums;
+}
+
+.settings .rows {
+	display: flex;
+	flex-direction: column;
+	gap: 11px;
+}
+
+input[type=range] {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 100%;
+	height: 18px;
+	background: none;
+	pointer-events: auto;
+	cursor: pointer;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+	height: 2px;
+	border-radius: 2px;
+	background: rgba(255, 255, 255, .18);
+}
+
+input[type=range]::-moz-range-track {
+	height: 2px;
+	border-radius: 2px;
+	background: rgba(255, 255, 255, .18);
+}
+
+input[type=range]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 13px;
+	height: 13px;
+	margin-top: -5.5px;
+	border-radius: 50%;
+	background: var(--ink);
+	box-shadow: 0 1px 5px rgba(0, 0, 0, .5);
+}
+
+input[type=range]::-moz-range-thumb {
+	width: 13px;
+	height: 13px;
+	border: none;
+	border-radius: 50%;
+	background: var(--ink);
+}
+
+.toggle,
+.swatch {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	margin-bottom: 10px;
+	font-size: 10px;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	cursor: pointer;
+}
+
+.toggle input {
+	appearance: none;
+	width: 30px;
+	height: 17px;
+	flex: none;
+	border-radius: 9px;
+	background: rgba(255, 255, 255, .14);
+	position: relative;
+	cursor: pointer;
+	transition: background var(--t) var(--ease);
+}
+
+.toggle input::after {
+	content: '';
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 11px;
+	height: 11px;
+	border-radius: 50%;
+	background: var(--ink);
+	transition: transform var(--t) var(--ease);
+}
+
+.toggle input:checked { background: var(--accent); }
+.toggle input:checked::after { transform: translateX(13px); }
+
+.swatch input {
+	appearance: none;
+	width: 30px;
+	height: 17px;
+	flex: none;
+	padding: 0;
+	border: 1px solid var(--hair-hi);
+	border-radius: 5px;
+	background: none;
+	cursor: pointer;
+}
+
+.swatch input::-webkit-color-swatch-wrapper { padding: 2px; }
+.swatch input::-webkit-color-swatch { border: none; border-radius: 3px; }
+.swatch input::-moz-color-swatch { border: none; border-radius: 3px; }
+
+/* ─────────────────────────────────────────────── the frame cost */
+
+/* Bottom right, the one corner the bar and the tip both leave alone. Tabular
+   figures because the number changes every frame and a proportional `1` makes
+   the whole readout twitch sideways. */
+.fps {
+	position: fixed;
+	right: 22px;
+	bottom: 30px;
+	margin: 0;
+	font-size: 10px;
+	letter-spacing: .14em;
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-3);
+	text-shadow: var(--shade);
+	pointer-events: none;
+	transition: opacity var(--t) var(--ease), visibility var(--t);
+}
+
+.fps.is-low { color: #ffb26b; }
+
+/* ─────────────────────────────────────────────── the tip */
+
+.tip {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 8px;
+	margin: 0;
+	text-align: center;
+	font-size: 9px;
+	letter-spacing: .16em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+	text-shadow: var(--shade);
+	pointer-events: none;
+	transition: opacity var(--t) var(--ease);
+}
+
+body.touched .tip { opacity: 0; }
+
+/* ─────────────────────────────────────────────── hiding the controls */
+
+/* `visibility`, not merely `opacity` and `pointer-events`. Every control in here
+   is a `button`, an `input` or an `a`, and the `#ui` allowlist at the top of
+   this file gives those `pointer-events: auto` with ID specificity — which beats
+   an inherited `none` from any of the selectors below. Without the visibility
+   the whole bar stays hit-testable at zero opacity, so a drag across the bottom
+   of the picture lands on an invisible Location button instead of the camera.
+   The `.opt-menu` rule further up carries the same note for the same reason. */
+body.chrome-hidden .bar,
+body.chrome-hidden .settings,
+body.chrome-hidden .loading,
+body.chrome-hidden .brand,
+body.chrome-hidden .fps,
+body.is-recording .fps,
+body.chrome-hidden .tip {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+}
+
+body.chrome-hidden .hud::before,
+body.is-playing:not(.is-recording) .hud::before {
+	opacity: 0;
+	visibility: hidden;
+}
+
+body.chrome-hidden .bar { transform: translateY(14px); }
+/* The eye stays, dimmed — it is the only way back. */
+body.chrome-hidden .corner .icon { opacity: .35; }
+body.chrome-hidden .corner .icon:hover { opacity: 1; }
+
+/* ─────────────────────────────────────────────── while a move runs */
+
+/* The move takes the interface with it. Nothing here is worth looking at while
+   the city comes over, and a bar across the bottom is exactly where the flat
+   street it bends away from is. `chrome-hidden` already does the work — a move
+   just borrows it, and gives it back on its own or the first time anybody
+   clicks the picture. */
+body.is-playing:not(.chrome-hidden) .bar,
+body.is-playing:not(.chrome-hidden) .settings,
+body.is-playing:not(.chrome-hidden) .corner,
+body.is-playing:not(.chrome-hidden) .loading,
+body.is-playing:not(.chrome-hidden) .brand,
+body.is-playing:not(.chrome-hidden) .tip {
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+}
+
+/* A capture is the exception, and it has to be. A move fades the bar because
+   the move is the thing being watched; a capture is a thing being *supervised* —
+   it runs slower than real time, and the percentage and the only way to abort
+   are both in that bar. So the bar comes back, and everything on it except the
+   record button goes quiet instead. */
+body.is-recording:not(.chrome-hidden) .bar {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transform: none;
+}
+
+/* Dim only. What actually makes these inert is the `disabled` attribute
+   `setRecording` puts on them — `pointer-events: none` here would be overridden
+   by the `#ui button` allowlist at the top of this file, which carries an id and
+   therefore wins. */
+body.is-recording .bar > *:not(.rec-btn) { opacity: .22; }
+
+/* ─────────────────────────────────────────────── setup */
+
+/* Ported from threejs-cinematic-world-zoom so the two experiments open the same
+   way. Two screens, one question each: get a key, then paste it. */
+
+.keyprompt {
+	position: fixed;
+	inset: 0;
+	z-index: 30;
+	display: grid;
+	place-items: center;
+	padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+	/* The city is the backdrop, not a black plate: a scrim light enough that it
+	   still reads around the card, deepening toward the corners so the title and
+	   the card keep their separation. */
+	background: radial-gradient(115% 76% at 50% 46%, rgba(0, 0, 0, .28), rgba(0, 0, 0, .82) 100%);
+	backdrop-filter: blur(2px) saturate(.95);
+	-webkit-backdrop-filter: blur(2px) saturate(.95);
+	/* #ui hands pointer events to its controls one tag at a time, which leaves
+	   the card's own headings and copy dead. This is a modal — it takes the whole
+	   surface, and the gate below it is inert anyway. */
+	pointer-events: auto;
+}
+
+.keyprompt[hidden] { display: none; }
+
+/* A header carrying the chapter and the progress stroke, a body that scrolls
+   only if a step needs it, and a footer that pins the primary action and the
+   single notice row. The three rows are the point: a step's length can never
+   push the button below the fold, and a failure that arrives while somebody is
+   reading screen 01 is still visible, because the notice is not inside a step. */
+.keyprompt-card {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	width: min(480px, 100%);
+	max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+	overflow: hidden;
+	border: 1px solid var(--hair);
+	border-radius: var(--r);
+	background: var(--glass-solid);
+	box-shadow: 0 36px 100px -28px rgba(0, 0, 0, .95);
+	animation: keycard-in 280ms var(--ease);
+}
+
+@keyframes keycard-in { from { opacity: 0; transform: translateY(8px); } }
+
+.keyhead {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: baseline;
+	gap: 10px;
+	padding: 18px 26px 0;
+}
+
+.keyhead-chapter {
+	font-size: 9px;
+	font-weight: 500;
+	letter-spacing: .17em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.keyhead-count {
+	font: 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+	letter-spacing: .08em;
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-3);
+}
+
+/* The stroke, held at the step rather than at a hover. */
+.keybar {
+	grid-column: 1 / -1;
+	position: relative;
+	height: 1px;
+	margin-top: 14px;
+	background: var(--hair);
+}
+
+.keybar::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: var(--accent);
+	transform: scaleX(var(--keystep, .5));
+	transform-origin: 0 50%;
+	transition: transform 460ms var(--ease);
+}
+
+/* A rejected key re-opens on the paste screen alone, so the card must not
+   advertise a first screen the user was never shown. */
+.keyprompt.is-single .keyhead-count,
+.keyprompt.is-single .keyhead .vh,
+.keyprompt.is-single .keybar { display: none; }
+
+.keybody {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 18px 26px 20px;
+}
+
+/* display:none to displayed restarts the animation on its own, so the step
+   change needs no JS timing and there is never a frame with both steps in the
+   box tree — which is what keeps the focus ring honest. */
+.keystep { animation: keystep-in 320ms var(--ease); }
+.keystep[hidden] { display: none; }
+
+.keystep > * { animation: keystep-in 320ms var(--ease) both; }
+.keystep > :nth-child(2) { animation-delay: 60ms; }
+.keystep > :nth-child(3) { animation-delay: 120ms; }
+
+@keyframes keystep-in { from { opacity: 0; transform: translateY(7px); } }
+
+/* Back mirrors the axis rather than replaying the entrance backwards. */
+@keyframes keystep-back { from { opacity: 0; transform: translateY(-7px); } }
+
+.keyprompt.is-back .keystep,
+.keyprompt.is-back .keystep > * { animation-name: keystep-back; }
+
+.keystep h2 {
+	margin: 0;
+	font-size: 24px;
+	font-weight: 500;
+	letter-spacing: -.025em;
+}
+
+/* It takes focus on arrival so the heading is the announcement; that is not a
+   reason to draw a ring around a paragraph nobody can act on. */
+.keystep h2:focus { outline: none; }
+
+.keystep-sub {
+	margin: 11px 0 0;
+	font-size: 13px;
+	line-height: 1.6;
+	color: var(--ink-2);
+}
+
+.keystep-hint {
+	margin: 15px 0 0;
+	font-size: 10.5px;
+	line-height: 1.55;
+	color: var(--ink-3);
+}
+
+.keyform { margin-top: 22px; }
+
+.keyform label {
+	display: block;
+	margin-bottom: 9px;
+	font-size: 9px;
+	font-weight: 500;
+	letter-spacing: .15em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+/* An underline row. A boxed input would be the only one in the app, and this is
+   a field shown in error as often as clean. */
+.keyfield {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 9px 2px;
+	border-bottom: 1px solid var(--hair);
+	transition: border-color 220ms var(--ease);
+}
+
+.keyfield svg {
+	flex: none;
+	width: 15px;
+	height: 15px;
+	color: var(--ink-3);
+}
+
+.keyfield input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	background: none;
+	color: var(--ink);
+	font: inherit;
+	font-size: 13px;
+	padding: 0;
+	outline: none;
+}
+
+.keyfield input::placeholder { color: var(--ink-3); }
+.keyfield:focus-within { border-bottom-color: var(--hair-hi); }
+.keyprompt.has-error .keyfield { border-bottom-color: rgba(255, 100, 92, .52); }
+
+.keyfoot {
+	padding: 14px 26px 20px;
+	border-top: 1px solid var(--hair);
+}
+
+/* Two lines held open: the longest rejection runs to two, and a card that
+   resizes under the answer reads as a card that lost its place. Only on the
+   paste screen — that is the one that answers back. */
+.keynote {
+	min-height: 34px;
+	margin: 0;
+	font-size: 10.5px;
+	line-height: 1.55;
+	color: var(--ink-2);
+}
+
+.keyprompt.is-step-get .keynote { min-height: 0; }
+.keyprompt.has-error .keynote { color: #f2aaa6; }
+
+.keynote-link {
+	position: relative;
+	display: inline-block;
+	margin: 0 0 10px;
+	font-size: 10.5px;
+	font-weight: 500;
+	color: var(--accent);
+	text-decoration: none;
+}
+
+.keynote-link[hidden] { display: none; }
+
+.keyact {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.keyact[hidden] { display: none; }
+
+.keyalt {
+	position: relative;
+	padding: 0 0 8px;
+	border: 0;
+	background: none;
+	color: var(--ink-3);
+	font: inherit;
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: .13em;
+	text-transform: uppercase;
+	text-align: left;
+	cursor: pointer;
+	transition: color 220ms var(--ease);
+}
+
+.keyalt:hover { color: var(--ink-2); }
+.keyalt[aria-disabled="true"] { pointer-events: none; opacity: .4; }
+
+/* The one filled control in the app. Setup is the only screen where nobody has
+   met the interface yet, so the primary says which thing it is. */
+.keygo {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	flex: none;
+	min-height: 44px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: var(--r-s);
+	background: var(--accent);
+	color: #050505;
+	font: inherit;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: background 200ms var(--ease);
+}
+
+.keygo:hover { background: #fff; }
+.keygo:focus-visible { outline: 1px solid var(--hair-hi); outline-offset: 3px; }
+
+/* aria-disabled, not disabled: a disabled button drops out of the focus ring
+   mid-verify, and the trap would have nothing to wrap around. */
+.keygo[aria-disabled="true"] { cursor: wait; opacity: .72; }
+
+.keygo i {
+	display: none;
+	width: 11px;
+	height: 11px;
+	border: 1.5px solid rgba(5, 5, 5, .32);
+	border-top-color: #050505;
+	border-radius: 50%;
+	animation: key-spin .7s linear infinite;
+}
+
+.keyprompt.is-checking .keygo i { display: block; }
+
+@keyframes key-spin { to { transform: rotate(360deg); } }
+
+/* The brand carries a byline now, like the other experiment. */
+.brand .credit { opacity: .8; }
+.brand a { color: var(--ink-2); text-decoration: none; }
+.brand a:hover { color: var(--ink); }
+/* Above `.keyprompt` (30), or the scrim blurs the one thing on screen that
+   says what this is. */
+body.keyprompt-open .brand { opacity: 1; z-index: 31; }
+
+/* Setup is a gate, so the interface behind it is not merely inert — it is not
+   there. A panel of controls over a sky the tiles will never reach is a set of
+   promises the app cannot keep. The title stays: it is the one thing on screen
+   that says what this is. */
+body.keyprompt-open .hud,
+body.keyprompt-open .chrome,
+body.keyprompt-open .boot { display: none; }
+
+/* ─────────────────────────────────────────────── narrow */
+
+/* The line becomes a column reading down the left edge, and the two popovers
+   stop being popovers: at this width there is no room beside the trigger, so
+   they take the middle of the screen with a backdrop behind them and a close
+   button of their own. */
+@media (max-width: 860px) {
+
+	.brand { top: 18px; }
+	.brand h1 { font-size: 13px; letter-spacing: .2em; }
+	.brand p { font-size: 8.5px; letter-spacing: .08em; line-height: 1.8; max-width: 76vw; margin-inline: auto; }
+
+	.corner {
+		top: 16px;
+		right: 14px;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+	}
+
+	/* Out of the title's way. The brand runs the full width at this size, and
+	   the bar owns the bottom left, so the streaming pill takes the one corner
+	   nothing else wants — the record button is hidden here. */
+	.loading {
+		top: auto;
+		left: auto;
+		right: 14px;
+		bottom: max(16px, env(safe-area-inset-bottom, 0px));
+		padding: 7px 11px;
+		font-size: 9px;
+	}
+
+	/* The streaming pill takes this corner at this width, so the readout sits
+	   directly above it. */
+	.fps {
+		right: 14px;
+		bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 32px);
+		font-size: 9px;
+	}
+
+	.bar {
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: flex-end;
+		left: 0;
+		right: auto;
+		bottom: max(20px, env(safe-area-inset-bottom, 0px));
+		gap: 12px;
+		padding: 0 16px;
+		width: auto;
+		max-width: min(240px, calc(100vw - 72px));
+	}
+
+	.hud::before { height: min(56dvh, 340px); }
+
+	.opt, .opt-wrap { min-width: 0; flex: none; width: 100%; }
+	.opt-wrap > .opt { flex: none; width: 100%; min-width: 0; }
+	#opt-place, #opt-shape, #opt-move, #opt-height { min-width: 0; }
+	.bar-sep { display: none; }
+	.go { flex: none; margin-top: 4px; }
+	/* A phone is not the capture surface. */
+	.rec-btn { display: none; }
+	.adv-group:has( #rec-res ) { display: none; }
+
+	.picker-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 1;
+		display: block;
+		padding: 0;
+		border: 0;
+		background: rgba(0, 0, 0, .62);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition: opacity 220ms var(--ease), visibility 280ms;
+	}
+
+	body.shapes-open .picker-backdrop,
+	body.moves-open .picker-backdrop,
+	body.heights-open .picker-backdrop { opacity: 1; visibility: visible; pointer-events: auto; }
+
+	.opt-menu {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		bottom: auto;
+		width: min(380px, calc(100vw - 28px));
+		max-height: min(680px, calc(100dvh - 32px));
+		box-shadow: 0 28px 80px -20px rgba(0, 0, 0, .88);
+		transform: translate(-50%, calc(-50% + 12px)) scale(.985);
+		transform-origin: 50% 50%;
+		z-index: 2;
+	}
+
+	body.shapes-open #shapes,
+	body.moves-open #moves,
+	body.heights-open #heights { transform: translate(-50%, -50%) scale(1); }
+
+	.picker-head { padding: 13px 10px 11px 16px; }
+
+	.picker-close {
+		width: 44px;
+		height: 44px;
+		margin: -10px -4px -8px 0;
+		display: grid;
+		place-items: center;
+		border: 0;
+		background: none;
+		color: var(--ink-3);
+		cursor: pointer;
+	}
+
+	.picker-close svg { width: 16px; height: 16px; }
+	.picker-close:hover, .picker-close:focus-visible { color: var(--ink); outline: none; }
+
+	.settings {
+		top: 58px;
+		right: 14px;
+		width: min(320px, calc(100vw - 28px));
+		max-height: calc(100dvh - 96px);
+	}
+
+	.tip { display: none; }
+
+}
